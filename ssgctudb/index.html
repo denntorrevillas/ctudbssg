@@ -328,33 +328,71 @@ function exportCSV(rows,filename){
 }
 
 // Export Block PDF with No. column
-function exportBlockPDF(block){
+// Export Block PDF with header and footer images
+function exportBlockPDF(block) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const topMargin = 70, bottomMargin = 38;
 
-  doc.setFontSize(12);
-  doc.text(`${formatBlockCode(block.BLOCK_CODE)}`, 10, topMargin - 2);
+  const topMargin = 55;    // leave space for header
+  const bottomMargin = 30; // leave space for footer
 
-  doc.autoTable({
-    startY: topMargin,
-    head: [["No.","STUDENT_ID","Full Name","Signature"]],
-    body: block.students.map((s,i)=>[
-    i + 1,
-    s.STUDENT_ID,
-    `${s.LAST_NAME}, ${s.FIRST_NAME} ${s.MIDDLE||''}`.trim(),
-    ""
-]),
-    theme:'grid',
-    headStyles:{fillColor:[52,58,64],halign:'center',valign:'middle'},
-    columnStyles:{0:{cellWidth:10},1:{cellWidth:30},2:{cellWidth:90},3:{cellWidth:50}},
-    styles:{cellPadding:1,fontSize:10,valign:'middle',halign:'left'},
-    margin:{top:topMargin,bottom:bottomMargin},
-    showHead:'firstPage'
-  });
+  // Load header and footer images
+  const headerImg = new Image();
+  headerImg.src = 'header.png';
 
-  doc.save(`Block_${formatBlockCode(block.BLOCK_CODE)}.pdf`);
+  const footerImg = new Image();
+  footerImg.src = 'footer1.png';
+
+  headerImg.onload = () => {
+    footerImg.onload = () => {
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Draw header and footer
+      const drawHeaderFooter = () => {
+        const headerRatio = headerImg.width / headerImg.height;
+        const headerWidth = pageWidth - 30;
+        const headerHeight = headerWidth / headerRatio;
+        doc.addImage(headerImg, 'PNG', 15, 5, headerWidth, headerHeight);
+
+        const footerRatio = footerImg.width / footerImg.height;
+        const footerWidth = pageWidth - 20;
+        const footerHeight = footerWidth / footerRatio;
+        doc.addImage(footerImg, 'PNG', 10, pageHeight - footerHeight - 5, footerWidth, footerHeight);
+      };
+
+      drawHeaderFooter();
+
+      doc.autoTable({
+        startY: topMargin,
+        head: [["No.", "STUDENT_ID", "Full Name", "Signature"]],
+        body: block.students.map((s, i) => [
+          i + 1,
+          s.STUDENT_ID,
+          `${s.LAST_NAME}, ${s.FIRST_NAME} ${s.MIDDLE || ''}`.trim(),
+          ""
+        ]),
+        theme: 'grid',
+        headStyles: { fillColor: [52, 58, 64], halign: 'center', valign: 'middle' },
+        columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 30 }, 2: { cellWidth: 90 }, 3: { cellWidth: 50 } },
+        styles: { cellPadding: 1, fontSize: 10, valign: 'middle', halign: 'left' },
+        margin: { top: topMargin, bottom: bottomMargin },
+        didDrawPage: function (data) {
+          // Draw header/footer on each page
+          drawHeaderFooter();
+
+          // Minimal block code at table left-top
+          doc.setFontSize(9);
+          doc.text(`${block.BLOCK_CODE}`, data.settings.margin.left, data.settings.margin.top - 2);
+        }
+      });
+
+      doc.save(`Block_${block.BLOCK_CODE}.pdf`);
+    };
+  };
 }
+
 
 // Block modal
 function openBlockModal(block){
@@ -399,7 +437,7 @@ document.getElementById('exportAllPdf').addEventListener('click', ()=>{
   const doc = new jsPDF();
   const start = (currentPage - 1) * rowsPerPage;
   const pageData = filteredBlocks.slice(start, start + rowsPerPage);
-  const topMargin = 70, bottomMargin = 38;
+  const topMargin = 50, bottomMargin = 38;
 
   // Helper function to convert to Proper Case
   function toProperCase(str) {
@@ -462,6 +500,7 @@ document.getElementById('globalStudentSearch').addEventListener('input', functio
 
 </body>
 </html>
+
 
 
 
