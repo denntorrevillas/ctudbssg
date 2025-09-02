@@ -339,7 +339,12 @@ function exportBlockPDF(block){
   doc.autoTable({
     startY: topMargin,
     head: [["No.","STUDENT_ID","Full Name","Signature"]],
-    body: block.students.map((s,i)=>[i+1,s.STUDENT_ID,`${s.FIRST_NAME} ${s.MIDDLE||''} ${s.LAST_NAME}`.trim(),""]),
+    body: block.students.map((s,i)=>[
+    i + 1,
+    s.STUDENT_ID,
+    `${s.LAST_NAME}, ${s.FIRST_NAME} ${s.MIDDLE||''}`.trim(),
+    ""
+]),
     theme:'grid',
     headStyles:{fillColor:[52,58,64],halign:'center',valign:'middle'},
     columnStyles:{0:{cellWidth:10},1:{cellWidth:30},2:{cellWidth:90},3:{cellWidth:50}},
