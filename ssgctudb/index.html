@@ -14,6 +14,42 @@
 </head>
 <body class="p-4">
 
+  <style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+  }
+
+  .crawler-header {
+    width: 100%;
+    overflow: hidden;
+    background-color: #343a40; /* dark background */
+    color: #fff;
+    font-weight: bold;
+    white-space: nowrap;
+    box-sizing: border-box;
+    padding: 10px 0;
+  }
+
+  .crawler-text {
+    display: inline-block;
+    padding-left: 100%; /* start outside the screen */
+    animation: crawl 15s linear infinite;
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+
+  @keyframes crawl {
+    0% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+</style>
+
 <!-- Password Modal -->
 <div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-dialog-centered">
@@ -29,6 +65,12 @@
         <button id="submitPassword" class="btn btn-primary">Submit</button>
       </div>
     </div>
+  </div>
+</div>
+
+  <div class="crawler-header">
+  <div class="crawler-text">
+    SUPREME STUDENT GOVERNMENT ACCESS ONLY
   </div>
 </div>
 
@@ -406,5 +448,6 @@ document.getElementById('globalStudentSearch').addEventListener('input', functio
 
 </body>
 </html>
+
 
 
