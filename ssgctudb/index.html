@@ -12,11 +12,8 @@
   .table-container { max-height: 500px; overflow-y: auto; }
 </style>
 </head>
-<body class="px-4">
-  <br>
-  <br>
-  <br>
-
+<body class="p-4">
+ 
   <style>
   body {
     margin: 0;
@@ -24,21 +21,20 @@
     background-color: #f8f9fa;
   }
 
- .crawler-header {
-  position: fixed;      /* Fix at the top */
-  top: 0;               /* Start at the very top */
-  left: 0;
-  width: 100%;
-  overflow: hidden;
-  background-color: #343a40; /* dark background */
-  color: #fff;
-  font-weight: bold;
-  white-space: nowrap;
-  box-sizing: border-box;
-  padding: 10px 0;
-  z-index: 9999;        /* Stay above all content */
+.crawler-header {
+    position: fixed;       /* fix at top */
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    background-color: #343a40; /* dark background */
+    color: #fff;
+    font-weight: bold;
+    white-space: nowrap;
+    box-sizing: border-box;
+    padding: 10px 0;
+    z-index: 9999;          /* stay on top */
 }
-
 
   .crawler-text {
     display: inline-block;
@@ -57,6 +53,8 @@
     }
   }
 </style>
+<br>
+
 
 <!-- Password Modal -->
 <div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -76,11 +74,13 @@
   </div>
 </div>
 
-   <div class="crawler-header">
-  <div class="d-flex crawler-text align-items-center">
-    <img src="2.png" alt="" srcset="" style="height: 30px;">
-    <h6 class="mb-0"><b>SUPREME STUDENT GOVERNMENT ACCESS ONLY</b></h6>
+<div class="crawler-header">
+  <div class="crawler-text">
+    SUPREME STUDENT GOVERNMENT ACCESS ONLY
   </div>
+</div>
+
+  
 </div>
 
 <h2 class="mb-2"><b>CTU Daanbantayan Students</b></h2>
@@ -457,7 +457,6 @@ document.getElementById('globalStudentSearch').addEventListener('input', functio
 
 </body>
 </html>
-
 
 
 
