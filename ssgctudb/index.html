@@ -333,13 +333,12 @@ function exportBlockPDF(block) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  const topMargin = 55;    // leave space for header
-  const bottomMargin = 30; // leave space for footer
+  const topMargin = 55;
+  const bottomMargin = 30;
 
-  // Load header and footer images
+  // Preload header/footer images
   const headerImg = new Image();
   headerImg.src = 'header.png';
-
   const footerImg = new Image();
   footerImg.src = 'footer1.png';
 
@@ -349,20 +348,19 @@ function exportBlockPDF(block) {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
 
-      // Draw header and footer
-      const drawHeaderFooter = () => {
-        const headerRatio = headerImg.width / headerImg.height;
-        const headerWidth = pageWidth - 30;
-        const headerHeight = headerWidth / headerRatio;
-        doc.addImage(headerImg, 'PNG', 15, 5, headerWidth, headerHeight);
+      // Precompute dimensions
+      const headerRatio = headerImg.width / headerImg.height;
+      const headerWidth = pageWidth - 30;
+      const headerHeight = headerWidth / headerRatio;
 
-        const footerRatio = footerImg.width / footerImg.height;
-        const footerWidth = pageWidth - 20;
-        const footerHeight = footerWidth / footerRatio;
+      const footerRatio = footerImg.width / footerImg.height;
+      const footerWidth = pageWidth - 20;
+      const footerHeight = footerWidth / footerRatio;
+
+      const drawHeaderFooter = () => {
+        doc.addImage(headerImg, 'PNG', 15, 5, headerWidth, headerHeight);
         doc.addImage(footerImg, 'PNG', 10, pageHeight - footerHeight - 5, footerWidth, footerHeight);
       };
-
-      drawHeaderFooter();
 
       doc.autoTable({
         startY: topMargin,
@@ -379,10 +377,8 @@ function exportBlockPDF(block) {
         styles: { cellPadding: 1, fontSize: 10, valign: 'middle', halign: 'left' },
         margin: { top: topMargin, bottom: bottomMargin },
         didDrawPage: function (data) {
-          // Draw header/footer on each page
           drawHeaderFooter();
-
-          // Minimal block code at table left-top
+          // Minimal block code at top-left
           doc.setFontSize(9);
           doc.text(`${block.BLOCK_CODE}`, data.settings.margin.left, data.settings.margin.top - 2);
         }
