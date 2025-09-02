@@ -12,7 +12,10 @@
   .table-container { max-height: 500px; overflow-y: auto; }
 </style>
 </head>
-<body class="p-4">
+<body class="px-4">
+  <br>
+  <br>
+  <br>
 
   <style>
   body {
@@ -21,16 +24,21 @@
     background-color: #f8f9fa;
   }
 
-  .crawler-header {
-    width: 100%;
-    overflow: hidden;
-    background-color: #343a40; /* dark background */
-    color: #fff;
-    font-weight: bold;
-    white-space: nowrap;
-    box-sizing: border-box;
-    padding: 10px 0;
-  }
+ .crawler-header {
+  position: fixed;      /* Fix at the top */
+  top: 0;               /* Start at the very top */
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  background-color: #343a40; /* dark background */
+  color: #fff;
+  font-weight: bold;
+  white-space: nowrap;
+  box-sizing: border-box;
+  padding: 10px 0;
+  z-index: 9999;        /* Stay above all content */
+}
+
 
   .crawler-text {
     display: inline-block;
@@ -74,8 +82,8 @@
   </div>
 </div>
 
-<h2 class="mb-2">CTU Daanbantayan Students</h2>
-<p class="mb-3" id="totalStudents">Total Students: 0</p>
+<h2 class="mb-2"><b>CTU Daanbantayan Students</b></h2>
+<p class="mb-3" id="totalStudents"><b>Total Students: 0</b></p>
 
 <input type="text" id="searchInput" class="form-control mb-3" placeholder="Search blocks...">
 <div class="mb-3">
@@ -448,6 +456,7 @@ document.getElementById('globalStudentSearch').addEventListener('input', functio
 
 </body>
 </html>
+
 
 
 
