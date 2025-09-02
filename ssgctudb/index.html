@@ -334,7 +334,7 @@ function exportBlockPDF(block) {
   const doc = new jsPDF();
 
   const topMargin = 50;    // top margin for first page
-  const bottomMargin = 30; // bottom margin
+  const bottomMargin = 25; // bottom margin
 
   doc.autoTable({
     startY: topMargin,
@@ -404,7 +404,7 @@ document.getElementById('exportAllPdf').addEventListener('click', ()=>{
   const doc = new jsPDF();
   const start = (currentPage - 1) * rowsPerPage;
   const pageData = filteredBlocks.slice(start, start + rowsPerPage);
-  const topMargin = 50, bottomMargin = 38;
+  const topMargin = 50, bottomMargin = 15;
 
   // Helper function to convert to Proper Case
   function toProperCase(str) {
@@ -467,6 +467,7 @@ document.getElementById('globalStudentSearch').addEventListener('input', functio
 
 </body>
 </html>
+
 
 
 
