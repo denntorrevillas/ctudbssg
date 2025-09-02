@@ -433,7 +433,7 @@ function renderModalTable(students){
 }
 
 // Export all blocks PDF per page
-document.getElementById('exportAllPdf').addEventListener('click', async () => {
+document.getElementById('exportAllPdf').addEventListener('click', function () {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
@@ -444,12 +444,10 @@ document.getElementById('exportAllPdf').addEventListener('click', async () => {
   const otherPagesTopMargin = 60;
   const bottomMargin = 25;
 
-  // Helper: Proper case
   function toProperCase(str) {
     return str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
   }
 
-  // Format block code
   function formatBlockCode(code) {
     if (!code) return "";
     code = code.toLowerCase().replace(/^blk_/, "");
@@ -461,79 +459,74 @@ document.getElementById('exportAllPdf').addEventListener('click', async () => {
     }
   }
 
-  // Load image as a promise
   function loadImage(src) {
-    return new Promise((resolve, reject) => {
+    return new Promise(function (resolve, reject) {
       const img = new Image();
       img.src = src;
-      img.onload = () => resolve(img);
-      img.onerror = reject;
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error("Failed to load " + src)); };
     });
   }
 
-  try {
-    const [headerImg, footerImg] = await Promise.all([
-      loadImage('header.png'),
-      loadImage('footer1.png')
-    ]);
+  // Preload images using promises
+  Promise.all([loadImage('header.png'), loadImage('footer1.png')])
+    .then(function ([headerImg, footerImg]) {
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+      function drawHeaderFooter() {
+        const headerRatio = headerImg.width / headerImg.height;
+        const headerWidth = pageWidth - 30;
+        const headerHeight = headerWidth / headerRatio;
+        doc.addImage(headerImg, 'PNG', 15, 5, headerWidth, headerHeight);
 
-    const drawHeaderFooter = () => {
-      // Header
-      const headerRatio = headerImg.width / headerImg.height;
-      const headerWidth = pageWidth - 30;
-      const headerHeight = headerWidth / headerRatio;
-      doc.addImage(headerImg, 'PNG', 15, 5, headerWidth, headerHeight);
+        const footerRatio = footerImg.width / footerImg.height;
+        const footerWidth = pageWidth - 20;
+        const footerHeight = footerWidth / footerRatio;
+        doc.addImage(footerImg, 'PNG', 10, pageHeight - footerHeight - 5, footerWidth, footerHeight);
+      }
 
-      // Footer
-      const footerRatio = footerImg.width / footerImg.height;
-      const footerWidth = pageWidth - 20;
-      const footerHeight = footerWidth / footerRatio;
-      doc.addImage(footerImg, 'PNG', 10, pageHeight - footerHeight - 5, footerWidth, footerHeight);
-    };
+      pageData.forEach(function (block, blockIndex) {
+        if (blockIndex > 0) doc.addPage();
 
-    pageData.forEach((block, blockIndex) => {
-      if (blockIndex > 0) doc.addPage();
+        let isFirstPage = true;
 
-      let isFirstPage = true;
-
-      doc.autoTable({
-        startY: firstPageTopMargin,
-        head: [["No.", "STUDENT_ID", "Full Name", "Signature"]],
-        body: block.students.map((s, i) => [
-          i + 1,
-          s.STUDENT_ID,
-          `${toProperCase(s.LAST_NAME)}, ${toProperCase(s.FIRST_NAME)} ${toProperCase(s.MIDDLE || '')}`.trim(),
-          ""
-        ]),
-        theme: 'grid',
-        headStyles: { fillColor: [52, 58, 64], halign: 'center', valign: 'middle' },
-        columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 30 }, 2: { cellWidth: 90 }, 3: { cellWidth: 50 } },
-        styles: { cellPadding: 1, fontSize: 10, valign: 'middle', halign: 'left' },
-        margin: { top: firstPageTopMargin, bottom: bottomMargin },
-        didDrawPage: (data) => {
-          drawHeaderFooter();
-
-          if (isFirstPage) {
-            doc.setFontSize(11);
-            doc.text(`Block: ${formatBlockCode(block.BLOCK_CODE)}`, 10, firstPageTopMargin - 2);
-          } else {
-            data.settings.head = [];
-            data.cursor.y = otherPagesTopMargin;
+        doc.autoTable({
+          startY: firstPageTopMargin,
+          head: [["No.", "STUDENT_ID", "Full Name", "Signature"]],
+          body: block.students.map(function (s, i) {
+            return [
+              i + 1,
+              s.STUDENT_ID,
+              (toProperCase(s.LAST_NAME) + ", " + toProperCase(s.FIRST_NAME) + " " + toProperCase(s.MIDDLE || '')).trim(),
+              ""
+            ];
+          }),
+          theme: 'grid',
+          headStyles: { fillColor: [52, 58, 64], halign: 'center', valign: 'middle' },
+          columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 30 }, 2: { cellWidth: 90 }, 3: { cellWidth: 50 } },
+          styles: { cellPadding: 1, fontSize: 10, valign: 'middle', halign: 'left' },
+          margin: { top: firstPageTopMargin, bottom: bottomMargin },
+          didDrawPage: function (data) {
+            drawHeaderFooter();
+            if (isFirstPage) {
+              doc.setFontSize(11);
+              doc.text("Block: " + formatBlockCode(block.BLOCK_CODE), 10, firstPageTopMargin - 2);
+            } else {
+              data.settings.head = [];
+              data.cursor.y = otherPagesTopMargin;
+            }
+            isFirstPage = false;
           }
-
-          isFirstPage = false;
-        }
+        });
       });
-    });
 
-    doc.save(`Blocks_Page${currentPage}.pdf`);
-  } catch (err) {
-    console.error("Error loading images:", err);
-    alert("Failed to load header/footer images. PDF cannot be generated.");
-  }
+      doc.save("Blocks_Page" + currentPage + ".pdf");
+    })
+    .catch(function (err) {
+      console.error(err);
+      alert("Failed to generate PDF. Please check your images or network connection.");
+    });
 });
 
 // Global Student Search
