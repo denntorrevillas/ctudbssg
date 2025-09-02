@@ -404,7 +404,7 @@ document.getElementById('exportAllPdf').addEventListener('click', ()=>{
   const doc = new jsPDF();
   const start = (currentPage - 1) * rowsPerPage;
   const pageData = filteredBlocks.slice(start, start + rowsPerPage);
-  const topMargin = 50, bottomMargin = 15;
+  const topMargin = 50, bottomMargin = 25;
 
   // Helper function to convert to Proper Case
   function toProperCase(str) {
@@ -467,6 +467,7 @@ document.getElementById('globalStudentSearch').addEventListener('input', functio
 
 </body>
 </html>
+
 
 
 
