@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSG Blocks Table</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  body { background-color: #f8f9fa; }
+  table th, table td { text-align: center; }
+  .table-container { max-height: 500px; overflow-y: auto; }
+</style>
+</head>
+<body class="p-4">
+
+<!-- Password Modal -->
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Enter Password</h5>
+      </div>
+      <div class="modal-body">
+        <input type="password" id="passwordInput" class="form-control" placeholder="Password">
+        <div id="passwordError" class="text-danger mt-2" style="display:none;">Incorrect password!</div>
+      </div>
+      <div class="modal-footer">
+        <button id="submitPassword" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="mb-2">CTU Daanbantayan Students</h2>
+<p class="mb-3" id="totalStudents">Total Students: 0</p>
+
+<input type="text" id="searchInput" class="form-control mb-3" placeholder="Search blocks...">
+<div class="mb-3">
+  <button id="exportAllPdf" class="btn btn-warning btn-sm">Export Current Page to PDF</button>
+  <button class="btn btn-info btn-sm" onclick="openGlobalStudentSearch()">Search Students</button>
+</div>
+
+<div class="table-container">
+  <table class="table table-bordered table-striped table-sm" id="blockTable">
+    <thead class="table-dark">
+      <tr>
+        <th>BLOCK_CODE</th>
+        <th>Number of Students</th>
+        <th>Excel</th>
+        <th>PDF</th>
+        <th>View</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<nav>
+  <ul class="pagination justify-content-center" id="pagination"></ul>
+</nav>
+
+<!-- Block Students Modal -->
+<div class="modal fade" id="blockModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Students in Block</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="modalSearch" class="form-control mb-2" placeholder="Search students...">
+        <div class="table-container">
+          <table class="table table-bordered table-striped table-sm" id="modalTable">
+            <thead class="table-dark">
+              <tr>
+                <th>STUDENT_ID</th>
+                <th>Full Name</th>
+                <th>MIDDLE</th>
+                <th>Excel</th>
+                <th>PDF</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Global Student Search Modal -->
+<div class="modal fade" id="studentSearchModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Search Students</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="globalStudentSearch" class="form-control mb-2" placeholder="Search any student...">
+        <div class="table-container">
+          <table class="table table-bordered table-striped table-sm" id="globalStudentTable">
+            <thead class="table-dark">
+              <tr>
+                <th>STUDENT_ID</th>
+                <th>Full Name</th>
+                <th>Block</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+let data = [], blocks = [], filteredBlocks = [], rowsPerPage = 50, currentPage = 1, currentBlockStudents = [];
+
+// Show password modal
+const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+passwordModal.show();
+
+// Password check
+document.getElementById('submitPassword').addEventListener('click', ()=>{
+  const input = document.getElementById('passwordInput').value.trim();
+  if(input === "JasonGwapo2025"){
+    passwordModal.hide();
+    loadCSV();
+  } else document.getElementById('passwordError').style.display='block';
+});
+
+// Load CSV
+function loadCSV(){
+  Papa.parse("SSG SELECTION.csv", {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results){
+      data = results.data;
+      generateBlocks();
+      renderTable();
+      renderPagination();
+    }
+  });
+}
+
+// Generate blocks excluding blk_ban, blk_tan, blk_san
+function generateBlocks(){
+  const blockMap = {};
+  data.forEach(r=>{
+    const code = (r.BLOCK_CODE||"").trim();
+    if(!code) return;
+    if(/^(blk_ban|blk_tab|blk_san)/i.test(code)) return;
+    if(blockMap[code]) blockMap[code].push(r);
+    else blockMap[code]=[r];
+  });
+  blocks = Object.keys(blockMap).map(c=>({BLOCK_CODE:c, students:blockMap[c]}))
+    .sort((a,b)=>a.BLOCK_CODE.localeCompare(b.BLOCK_CODE));
+  filteredBlocks = [...blocks];
+  updateTotalStudents();
+}
+
+// Update total students count
+function updateTotalStudents(){
+  const total = filteredBlocks.reduce((sum,b)=>sum+b.students.length,0);
+  document.getElementById('totalStudents').textContent = `Total Students: ${total}`;
+}
+
+// Main block search
+document.getElementById('searchInput').addEventListener('input', function(){
+  const term=this.value.toLowerCase();
+  filteredBlocks = blocks.filter(b=>b.BLOCK_CODE.toLowerCase().includes(term));
+  currentPage=1;
+  renderTable();
+  renderPagination();
+  updateTotalStudents();
+});
+
+// Render main block table
+function renderTable(){
+  const tbody = document.querySelector("#blockTable tbody");
+  tbody.innerHTML = "";
+  const start=(currentPage-1)*rowsPerPage;
+  const pageData=filteredBlocks.slice(start,start+rowsPerPage);
+
+  pageData.forEach(block=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${block.BLOCK_CODE}</td>
+      <td>${block.students.length}</td>
+      <td><button class="btn btn-success btn-sm export-csv">Excel</button></td>
+      <td><button class="btn btn-warning btn-sm export-pdf">PDF</button></td>
+      <td><button class="btn btn-primary btn-sm view-btn">View</button></td>
+    `;
+    tbody.appendChild(tr);
+
+    tr.querySelector('.export-csv').addEventListener('click',()=>exportCSV(block.students,`Block_${block.BLOCK_CODE}.csv`));
+    tr.querySelector('.export-pdf').addEventListener('click',()=>exportBlockPDF(block));
+    tr.querySelector('.view-btn').addEventListener('click',()=>openBlockModal(block));
+  });
+}
+
+// Pagination
+function renderPagination(){
+  const totalPages=Math.ceil(filteredBlocks.length/rowsPerPage);
+  const pagination=document.getElementById('pagination');
+  pagination.innerHTML="";
+  for(let i=1;i<=totalPages;i++){
+    const li=document.createElement('li');
+    li.className=`page-item ${i===currentPage?'active':''}`;
+    li.innerHTML=`<a class="page-link" href="#">${i}</a>`;
+    li.addEventListener('click', e=>{
+      e.preventDefault();
+      currentPage=i;
+      renderTable();
+      renderPagination();
+    });
+    pagination.appendChild(li);
+  }
+}
+
+// Block modal
+function openBlockModal(block){
+  currentBlockStudents = block.students.sort((a,b)=>a.LAST_NAME.localeCompare(b.LAST_NAME));
+  renderModalTable(currentBlockStudents);
+  new bootstrap.Modal(document.getElementById('blockModal')).show();
+}
+
+// Modal search
+document.getElementById('modalSearch').addEventListener('input', function(){
+  const term=this.value.toLowerCase();
+  const filtered=currentBlockStudents.filter(s=>
+    s.STUDENT_ID.toLowerCase().includes(term) ||
+    ((s.FIRST_NAME+" "+(s.MIDDLE||"")+" "+s.LAST_NAME).trim().toLowerCase().includes(term))
+  );
+  renderModalTable(filtered);
+});
+
+// Render modal table
+function renderModalTable(students){
+  const tbody=document.querySelector("#modalTable tbody");
+  tbody.innerHTML="";
+  students.forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${r.STUDENT_ID}</td>
+      <td>${(r.FIRST_NAME+" "+(r.MIDDLE||"")+" "+r.LAST_NAME).trim()}</td>
+      <td>${r.MIDDLE||""}</td>
+      <td><button class="btn btn-success btn-sm export-csv">Excel</button></td>
+      <td><button class="btn btn-warning btn-sm export-pdf">PDF</button></td>
+    `;
+    tbody.appendChild(tr);
+
+    tr.querySelector('.export-csv').addEventListener('click',()=>exportCSV([r],`Student_${r.STUDENT_ID}.csv`));
+    tr.querySelector('.export-pdf').addEventListener('click',()=>exportStudentPDF(r));
+  });
+}
+
+// Export CSV
+function exportCSV(rows,filename){
+  if(!rows.length) return;
+  const csvContent=Papa.unparse(rows);
+  const blob=new Blob([csvContent],{type:"text/csv;charset=utf-8;"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download=filename;
+  link.click();
+}
+
+// Export PDF for block
+function exportBlockPDF(block){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const topMargin=38, bottomMargin=38;
+  doc.setFontSize(12);
+  doc.text(`Block: ${block.BLOCK_CODE}`,10,topMargin-10);
+
+  doc.autoTable({
+    startY: topMargin,
+    head:[["STUDENT_ID","Full Name","Signature"]],
+    body:block.students.map(s=>[s.STUDENT_ID,`${s.FIRST_NAME} ${s.MIDDLE||''} ${s.LAST_NAME}`.trim(),""]),
+    theme:'grid',
+    headStyles:{fillColor:[52,58,64], halign:'center', valign:'middle'},
+    columnStyles:{0:{cellWidth:30},1:{cellWidth:110},2:{cellWidth:50}},
+    styles:{cellPadding:1,fontSize:10,valign:'middle',halign:'left'},
+    margin:{top:topMargin,bottom:bottomMargin},
+    showHead:'everyPage'
+  });
+
+  doc.save(`Block_${block.BLOCK_CODE}.pdf`);
+}
+
+// Export single student PDF
+function exportStudentPDF(student){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.autoTable({
+    head:[["STUDENT_ID","Full Name","Signature"]],
+    body:[[student.STUDENT_ID, `${student.FIRST_NAME} ${student.MIDDLE||''} ${student.LAST_NAME}`.trim(), ""]],
+    theme:'grid',
+    headStyles:{fillColor:[52,58,64], halign:'center', valign:'middle'},
+    columnStyles:{0:{cellWidth:30},1:{cellWidth:110},2:{cellWidth:50}},
+    styles:{cellPadding:1,fontSize:10,valign:'middle',halign:'left'}
+  });
+  doc.save(`Student_${student.STUDENT_ID}.pdf`);
+}
+
+// Export all blocks PDF per page
+document.getElementById('exportAllPdf').addEventListener('click', ()=>{
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const start=(currentPage-1)*rowsPerPage;
+  const pageData=filteredBlocks.slice(start,start+rowsPerPage);
+  const topMargin=38, bottomMargin=38;
+
+  pageData.forEach((block,index)=>{
+    if(index>0) doc.addPage();
+    doc.setFontSize(12);
+    doc.text(`Block: ${block.BLOCK_CODE}`,10,topMargin-10);
+    doc.autoTable({
+      startY: topMargin,
+      head:[["STUDENT_ID","Full Name","Signature"]],
+      body:block.students.map(s=>[s.STUDENT_ID,`${s.FIRST_NAME} ${s.MIDDLE||''} ${s.LAST_NAME}`.trim(),""]),
+      theme:'grid',
+      headStyles:{fillColor:[52,58,64], halign:'center', valign:'middle'},
+      columnStyles:{0:{cellWidth:30},1:{cellWidth:110},2:{cellWidth:50}},
+      styles:{cellPadding:1,fontSize:10,valign:'middle',halign:'left'},
+      margin:{top:topMargin,bottom:bottomMargin},
+      showHead:'everyPage'
+    });
+  });
+
+  doc.save(`Blocks_Page${currentPage}.pdf`);
+});
+
+// Global Student Search
+function openGlobalStudentSearch(){
+  const modal = new bootstrap.Modal(document.getElementById('studentSearchModal'));
+  renderGlobalStudentTable(data);
+  modal.show();
+}
+
+function renderGlobalStudentTable(students){
+  const tbody = document.querySelector("#globalStudentTable tbody");
+  tbody.innerHTML="";
+  students.forEach(s=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML=`<td>${s.STUDENT_ID}</td>
+                  <td>${(s.FIRST_NAME+" "+(s.MIDDLE||"")+" "+s.LAST_NAME).trim()}</td>
+                  <td>${s.BLOCK_CODE}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('globalStudentSearch').addEventListener('input', function(){
+  const term=this.value.toLowerCase();
+  const filtered = data.filter(s=>
+    s.STUDENT_ID.toLowerCase().includes(term) ||
+    ((s.FIRST_NAME+" "+(s.MIDDLE||"")+" "+s.LAST_NAME).trim().toLowerCase().includes(term)) ||
+    (s.BLOCK_CODE||"").toLowerCase().includes(term)
+  );
+  renderGlobalStudentTable(filtered);
+});
+</script>
+
+</body>
+</html>
